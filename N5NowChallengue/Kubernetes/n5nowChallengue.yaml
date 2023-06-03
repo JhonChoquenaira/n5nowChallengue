@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: n5now-challengue
+  name: n5now-backend
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: n5now-challengue
+          image: jhonchoquenaira/n5now-challengue:v1
+          ports:
+            - containerPort: 80
+          env:
+            - name: Settings__DatabaseConnection
+              value: "Server=localhost,1433;Database=Challengue;User Id=sa;Password=N5NowTest;"
+            - name: Settings__ElasticSearchConnection
+              value: "http://localhost:9200"
+            - name: Settings__ElasticSearchDefaultIndex
+              value: "n5now_index"
+            - name: Settings__KafkaConnection
+              value: "localhost:9092"            
+          volumeMounts:
+            - mountPath: "/LogN5NowChallengue"
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pvc-n5now
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: n5now-challengue
+  name: n5now-backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-n5now
+  namespace: n5now-challengue
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: do-block-storage
